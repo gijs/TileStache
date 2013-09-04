@@ -577,9 +577,12 @@ class Provider:
         
         return kwargs
     
-    def renderTile(self, width, height, srs, coord):
+    def renderTile(self, width, height, srs, coord, auth):
         """ Render a single tile, return a VectorResponse instance.
         """
+        if auth:
+            self.parameters['query'] = self.parameters['query'].replace(
+                '!auth!', ', '.join(str(i) for i in auth))
         layer, ds = _open_layer(self.driver, self.parameters, self.layer.config.dirpath)
         features = _get_features(coord, self.properties, self.layer.projection, layer, self.clipped, self.projected, self.spacing, self.id_property)
         response = {'type': 'FeatureCollection', 'features': features}

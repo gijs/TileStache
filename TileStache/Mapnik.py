@@ -77,6 +77,13 @@ class ImageProvider:
         
         self.layer = layer
         self.mapnik = None
+        self.host='s-web-db-00-d03.external-nens.local'
+        self.geometry_field='the_geom'
+        self.key_field='id'
+        self.user='postgres'
+        self.passwd='postgres'
+        self.dbname='lizard_nxt'
+        self.table=''
         
         engine = mapnik.FontEngine.instance()
         
@@ -101,7 +108,7 @@ class ImageProvider:
         
         return kwargs
     
-    def renderArea(self, width, height, srs, xmin, ymin, xmax, ymax, zoom):
+    def renderArea(self, width, height, srs, xmin, ymin, xmax, ymax, zoom, auth):
         """
         """
         start_time = time()
@@ -114,6 +121,23 @@ class ImageProvider:
                 if self.mapnik is None:
                     self.mapnik = get_mapnikMap(self.mapfile)
                     logging.debug('TileStache.Mapnik.ImageProvider.renderArea() %.3f to load %s', time() - start_time, self.mapfile)
+
+                #hack to only objects user is authorised to see
+                for la in self.mapnik.layers:
+                    query = """(SELECT * 
+                                FROM server_{}
+                                WHERE sewerage_id IN ({})
+                               ) AS server_{}""".format(la.name,
+                                            ', '.join(str(i) for i in auth),
+                                            la.name)
+                    la.datasource = mapnik.PostGIS(
+                           host=self.host,
+                           geometry_field=self.geometry_field,
+                           key_field=self.key_field,
+                           user=self.user,
+                           passwd=self.passwd,
+                           dbname=self.dbname,
+                           table=query)
 
                 self.mapnik.width = width
                 self.mapnik.height = height
@@ -204,6 +228,13 @@ class GridProvider:
         """
         self.mapnik = None
         self.layer = layer
+        self.host='s-web-db-00-d03.external-nens.local'
+        self.geometry_field='the_geom'
+        self.key_field='id'
+        self.user='postgres'
+        self.passwd='postgres'
+        self.dbname='lizard_nxt'
+        self.table=''
 
         maphref = urljoin(layer.config.dirpath, mapfile)
         scheme, h, path, q, p, f = urlparse(maphref)

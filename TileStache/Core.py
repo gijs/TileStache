@@ -347,7 +347,7 @@ class Layer:
 
         return None
 
-    def getTileResponse(self, coord, extension, ignore_cached=False):
+    def getTileResponse(self, coord, extension, ignore_cached=False, auth=None):
         """ Get status code, headers, and a tile binary for a given request layer tile.
         
             Arguments:
@@ -411,7 +411,7 @@ class Layer:
                     buff = StringIO()
 
                     try:
-                        tile = self.render(coord, format)
+                        tile = self.render(coord, format, auth)
                         save = True
                     except NoTileLeftBehind, e:
                         tile = e.tile
@@ -458,7 +458,7 @@ class Layer:
         """
         return self.metatile.isForReal() and hasattr(self.provider, 'renderArea')
     
-    def render(self, coord, format):
+    def render(self, coord, format, auth):
         """ Render a tile for a coordinate, return PIL Image-like object.
         
             Perform metatile slicing here as well, if required, writing the
@@ -492,12 +492,12 @@ class Layer:
         
         if self.doMetatile() or hasattr(provider, 'renderArea'):
             # draw an area, defined in projected coordinates
-            tile = provider.renderArea(width, height, srs, xmin, ymin, xmax, ymax, coord.zoom)
+            tile = provider.renderArea(width, height, srs, xmin, ymin, xmax, ymax, coord.zoom, auth)
         
         elif hasattr(provider, 'renderTile'):
             # draw a single tile
             width, height = self.dim, self.dim
-            tile = provider.renderTile(width, height, srs, coord)
+            tile = provider.renderTile(width, height, srs, coord, auth)
 
         else:
             raise KnownUnknown('Your provider lacks renderTile and renderArea methods.')

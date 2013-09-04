@@ -46,7 +46,7 @@ import Config
 _pathinfo_pat = re.compile(r'^/?(?P<l>\w.+)/(?P<z>\d+)/(?P<x>-?\d+)/(?P<y>-?\d+)\.(?P<e>\w+)$')
 _preview_pat = re.compile(r'^/?(?P<l>\w.+)/(preview\.html)?$')
 
-def getTile(layer, coord, extension, ignore_cached=False):
+def getTile(layer, coord, extension, auth=None, ignore_cached=False):
     ''' Get a type string and tile binary for a given request layer tile.
     
         This function is documented as part of TileStache's public API:
@@ -61,7 +61,7 @@ def getTile(layer, coord, extension, ignore_cached=False):
         This is the main entry point, after site configuration has been loaded
         and individual tiles need to be rendered.
     '''
-    status_code, headers, body = layer.getTileResponse(coord, extension, ignore_cached)
+    status_code, headers, body = layer.getTileResponse(coord, extension, ignore_cached, auth)
     mime = headers.get('Content-Type')
 
     return mime, body
