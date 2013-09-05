@@ -13,3 +13,4 @@ TileStache-*.*.tar.gz
 .coverage
 .idea/
 TileStache.egg-info/
+*swp
