@@ -82,7 +82,7 @@ class ImageProvider:
             self.geometry_field = dbparams['geometry_field']
             self.key_field = dbparams['key_field']
             self.user = dbparams['user']
-            self.passwd = dbparams['passwd']
+            self.password = dbparams['password']
             self.dbname = dbparams['dbname']
             self.table = dbparams['table']
         if auth_column:
@@ -142,7 +142,7 @@ class ImageProvider:
                            geometry_field=str(self.geometry_field),
                            key_field=str(self.key_field),
                            user=str(self.user),
-                           passwd=str(self.passwd),
+                           password=str(self.password),
                            dbname=str(self.dbname),
                            table=query)
 
@@ -240,7 +240,7 @@ class GridProvider:
             self.geometry_field = dbparams['geometry_field']
             self.key_field = dbparams['key_field']
             self.user = dbparams['user']
-            self.passwd = dbparams['passwd']
+            self.password = dbparams['password']
             self.dbname = dbparams['dbname']
             self.table = dbparams['table']
         if auth_column:
@@ -303,7 +303,7 @@ class GridProvider:
                            geometry_field=str(self.geometry_field),
                            key_field=str(self.key_field),
                            user=str(self.user),
-                           passwd=str(self.passwd),
+                           password=str(self.password),
                            dbname=str(self.dbname),
                            table=query)
 
