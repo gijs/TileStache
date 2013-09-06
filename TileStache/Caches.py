@@ -104,7 +104,7 @@ class Test:
     def __init__(self, logfunc=None):
         self.logfunc = logfunc
 
-    def _description(self, layer, coord, format):
+    def _description(self, layer, coord, auth, format):
         """
         """
         name = layer.name()
@@ -112,44 +112,44 @@ class Test:
 
         return ' '.join( (name, tile, format) )
     
-    def lock(self, layer, coord, format):
+    def lock(self, layer, coord, auth, format):
         """ Pretend to acquire a cache lock for this tile.
         """
-        name = self._description(layer, coord, format)
+        name = self._description(layer, coord, auth, format)
         
         if self.logfunc:
             self.logfunc('Test cache lock: ' + name)
     
-    def unlock(self, layer, coord, format):
+    def unlock(self, layer, coord, auth, format):
         """ Pretend to release a cache lock for this tile.
         """
-        name = self._description(layer, coord, format)
+        name = self._description(layer, coord, auth, format)
 
         if self.logfunc:
             self.logfunc('Test cache unlock: ' + name)
     
-    def remove(self, layer, coord, format):
+    def remove(self, layer, coord, auth, format):
         """ Pretend to remove a cached tile.
         """
-        name = self._description(layer, coord, format)
+        name = self._description(layer, coord, auth, format)
 
         if self.logfunc:
             self.logfunc('Test cache remove: ' + name)
     
-    def read(self, layer, coord, format):
+    def read(self, layer, coord, auth, format):
         """ Pretend to read a cached tile.
         """
-        name = self._description(layer, coord, format)
+        name = self._description(layer, coord, auth, format)
         
         if self.logfunc:
             self.logfunc('Test cache read: ' + name)
 
         return None
     
-    def save(self, body, layer, coord, format):
+    def save(self, body, layer, coord, auth, format):
         """ Pretend to save a cached tile.
         """
-        name = self._description(layer, coord, format)
+        name = self._description(layer, coord, auth, format)
         
         if self.logfunc:
             self.logfunc('Test cache save: %d bytes to %s' % (len(body), name))
@@ -192,13 +192,17 @@ class Disk:
     def _is_compressed(self, format):
         return format.lower() in self.gzip
     
-    def _filepath(self, layer, coord, format):
+    def _filepath(self, layer, coord, auth, format):
         """
         """
         l = layer.name()
         z = '%d' % coord.zoom
         e = format.lower()
         e += self._is_compressed(format) and '.gz' or ''
+        if auth:
+            auth_part = os.sep.join([str(i) for i in auth])
+        else:
+            auth_part = ''
         
         if self.dirs == 'safe':
             x = '%06d' % coord.column
@@ -207,13 +211,13 @@ class Disk:
             x1, x2 = x[:3], x[3:]
             y1, y2 = y[:3], y[3:]
             
-            filepath = os.sep.join( (l, z, x1, x2, y1, y2 + '.' + e) )
+            filepath = os.sep.join( (l, z, x1, x2, y1, y2, auth_part + '.' + e) )
             
         elif self.dirs == 'portable':
             x = '%d' % coord.column
             y = '%d' % coord.row
 
-            filepath = os.sep.join( (l, z, x, y + '.' + e) )
+            filepath = os.sep.join( (l, z, x, y, auth_part + '.' + e) )
             
         elif self.dirs == 'quadtile':
             pad, length = 1 << 31, 1 + coord.zoom
@@ -236,26 +240,26 @@ class Disk:
 
         return filepath
 
-    def _fullpath(self, layer, coord, format):
+    def _fullpath(self, layer, coord, auth, format):
         """
         """
-        filepath = self._filepath(layer, coord, format)
+        filepath = self._filepath(layer, coord, auth, format)
         fullpath = pathjoin(self.cachepath, filepath)
 
         return fullpath
 
-    def _lockpath(self, layer, coord, format):
+    def _lockpath(self, layer, coord, auth, format):
         """
         """
-        return self._fullpath(layer, coord, format) + '.lock'
+        return self._fullpath(layer, coord, auth, format) + '.lock'
     
-    def lock(self, layer, coord, format):
+    def lock(self, layer, coord, auth, format):
         """ Acquire a cache lock for this tile.
         
             Returns nothing, but blocks until the lock has been acquired.
             Lock is implemented as an empty directory next to the tile file.
         """
-        lockpath = self._lockpath(layer, coord, format)
+        lockpath = self._lockpath(layer, coord, auth, format)
         due = time.time() + layer.stale_lock_timeout
         
         while True:
@@ -280,12 +284,12 @@ class Disk:
             finally:
                 os.umask(umask_old)
     
-    def unlock(self, layer, coord, format):
+    def unlock(self, layer, coord, auth, format):
         """ Release a cache lock for this tile.
 
             Lock is implemented as an empty directory next to the tile file.
         """
-        lockpath = self._lockpath(layer, coord, format)
+        lockpath = self._lockpath(layer, coord, auth, format)
 
         try:
             os.rmdir(lockpath)
@@ -293,10 +297,10 @@ class Disk:
             # Ok, someone else deleted it already
             pass
         
-    def remove(self, layer, coord, format):
+    def remove(self, layer, coord, auth, format):
         """ Remove a cached tile.
         """
-        fullpath = self._fullpath(layer, coord, format)
+        fullpath = self._fullpath(layer, coord, auth, format)
         
         try:
             os.remove(fullpath)
@@ -305,10 +309,10 @@ class Disk:
             if e.errno != 2:
                 raise
         
-    def read(self, layer, coord, format):
+    def read(self, layer, coord, auth, format):
         """ Read a cached tile.
         """
-        fullpath = self._fullpath(layer, coord, format)
+        fullpath = self._fullpath(layer, coord, auth, format)
         
         if not exists(fullpath):
             return None
@@ -325,10 +329,10 @@ class Disk:
             body = open(fullpath, 'rb').read()
             return body
     
-    def save(self, body, layer, coord, format):
+    def save(self, body, layer, coord, auth, format):
         """ Save a cached tile.
         """
-        fullpath = self._fullpath(layer, coord, format)
+        fullpath = self._fullpath(layer, coord, auth, format)
         
         try:
             umask_old = os.umask(self.umask)

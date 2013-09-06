@@ -150,10 +150,10 @@ from ModestMaps.Core import Coordinate
 
 _recent_tiles = dict(hash={}, list=[])
 
-def _addRecentTile(layer, coord, format, body, age=300):
+def _addRecentTile(layer, coord, auth, format, body, age=300):
     """ Add the body of a tile to _recent_tiles with a timeout.
     """
-    key = (layer, coord, format)
+    key = (layer, coord, tuple(auth), format)
     due = time() + age
     
     _recent_tiles['hash'][key] = body, due
@@ -179,10 +179,10 @@ def _addRecentTile(layer, coord, format, body, age=300):
         except KeyError:
             pass
 
-def _getRecentTile(layer, coord, format):
+def _getRecentTile(layer, coord, auth, format):
     """ Return the body of a recent tile, or None if it's not there.
     """
-    key = (layer, coord, format)
+    key = (layer, coord, tuple(auth), format)
     body, use_by = _recent_tiles['hash'].get(key, (None, 0))
     
     # non-existent?
@@ -372,7 +372,7 @@ class Layer:
         if not ignore_cached:
             # Start by checking for a tile in the cache.
             try:
-                body = cache.read(self, coord, format)
+                body = cache.read(self, coord, auth, format)
             except TheTileLeftANote, e:
                 headers = e.headers
                 status_code = e.status_code
@@ -385,7 +385,7 @@ class Layer:
 
         else:
             # Then look in the bag of recent tiles.
-            body = _getRecentTile(self, coord, format)
+            body = _getRecentTile(self, coord, auth, format)
             tile_from = 'recent tiles'
         
         # If no tile was found, dig deeper
@@ -395,15 +395,16 @@ class Layer:
 
                 if self.write_cache:
                     # this is the coordinate that actually gets locked.
+                    #TODO
                     lockCoord = self.metatile.firstCoord(coord)
                     
                     # We may need to write a new tile, so acquire a lock.
-                    cache.lock(self, lockCoord, format)
+                    cache.lock(self, lockCoord, auth, format)
                 
                 if not ignore_cached:
                     # There's a chance that some other process has
                     # written the tile while the lock was being acquired.
-                    body = cache.read(self, coord, format)
+                    body = cache.read(self, coord, auth, format)
                     tile_from = 'cache after all'
         
                 if body is None:
@@ -431,7 +432,7 @@ class Layer:
                     body = buff.getvalue()
                     
                     if save:
-                        cache.save(body, self, coord, format)
+                        cache.save(body, self, coord, auth, format)
 
                     tile_from = 'layer.render()'
 
@@ -446,9 +447,9 @@ class Layer:
             finally:
                 if lockCoord:
                     # Always clean up a lock when it's no longer being used.
-                    cache.unlock(self, lockCoord, format)
+                    cache.unlock(self, lockCoord, auth, format)
         
-        _addRecentTile(self, coord, format, body)
+        _addRecentTile(self, coord, auth, format, body)
         logging.info('TileStache.Core.Layer.getTileResponse() %s/%d/%d/%d.%s via %s in %.3f', self.name(), coord.zoom, coord.column, coord.row, extension, tile_from, time() - start_time)
         
         return status_code, headers, body
