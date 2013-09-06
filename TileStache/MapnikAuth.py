@@ -61,7 +61,7 @@ class ImageProvider:
         - http://trac.mapnik.org/wiki/XMLConfigReference
     """
     
-    def __init__(self, layer, mapfile, fonts=None):
+    def __init__(self, layer, mapfile, dbparams=None, fonts=None, auth_column=None):
         """ Initialize Mapnik provider with layer and mapfile.
             
             XML mapfile keyword arg comes from TileStache config,
@@ -74,9 +74,19 @@ class ImageProvider:
             self.mapfile = path
         else:
             self.mapfile = maphref
-        
+
         self.layer = layer
         self.mapnik = None
+        if dbparams:
+            self.host = dbparams['host'] 
+            self.geometry_field = dbparams['geometry_field']
+            self.key_field = dbparams['key_field']
+            self.user = dbparams['user']
+            self.password = dbparams['password']
+            self.dbname = dbparams['dbname']
+            self.table = dbparams['table']
+        if auth_column:
+            self.auth_column = auth_column
         
         engine = mapnik.FontEngine.instance()
         
@@ -98,10 +108,12 @@ class ImageProvider:
 
         if 'fonts' in config_dict:
             kwargs['fonts'] = config_dict['fonts']
+        kwargs['auth_column'] = config_dict.get('auth_column', None)
+        kwargs['dbparams'] = config_dict.get('dbparams', None)
         
         return kwargs
     
-    def renderArea(self, width, height, srs, xmin, ymin, xmax, ymax, zoom):
+    def renderArea(self, width, height, srs, xmin, ymin, xmax, ymax, zoom, auth):
         """
         """
         start_time = time()
@@ -114,6 +126,25 @@ class ImageProvider:
                 if self.mapnik is None:
                     self.mapnik = get_mapnikMap(self.mapfile)
                     logging.debug('TileStache.Mapnik.ImageProvider.renderArea() %.3f to load %s', time() - start_time, self.mapfile)
+
+                #hack to only objects user is authorised to see
+                #NOTE: check if auth_column is set?
+                for la in self.mapnik.layers:
+                    query = """(SELECT * 
+                                FROM {}
+                                WHERE {} IN ({})
+                               ) AS {}""".format(self.table,
+                                            self.auth_column,
+                                            ', '.join(str(i) for i in auth),
+                                            self.table)
+                    la.datasource = mapnik.PostGIS(
+                           host=str(self.host),
+                           geometry_field=str(self.geometry_field),
+                           key_field=str(self.key_field),
+                           user=str(self.user),
+                           password=str(self.password),
+                           dbname=str(self.dbname),
+                           table=query)
 
                 self.mapnik.width = width
                 self.mapnik.height = height
@@ -196,7 +227,7 @@ class GridProvider:
         - https://github.com/mapbox/utfgrid-spec/blob/master/1.2/utfgrid.md
         - http://mapbox.github.com/wax/interaction-leaf.html
     """
-    def __init__(self, layer, mapfile, fields=None, layers=None, layer_index=0, scale=4, layer_id_key=None):
+    def __init__(self, layer, mapfile, fields=None, layers=None, layer_index=0, scale=4, layer_id_key=None, auth_column=None, dbparams=None):
         """ Initialize Mapnik grid provider with layer and mapfile.
             
             XML mapfile keyword arg comes from TileStache config,
@@ -204,6 +235,16 @@ class GridProvider:
         """
         self.mapnik = None
         self.layer = layer
+        if dbparams:
+            self.host = dbparams['host'] 
+            self.geometry_field = dbparams['geometry_field']
+            self.key_field = dbparams['key_field']
+            self.user = dbparams['user']
+            self.password = dbparams['password']
+            self.dbname = dbparams['dbname']
+            self.table = dbparams['table']
+        if auth_column:
+            self.auth_column = auth_column
 
         maphref = urljoin(layer.config.dirpath, mapfile)
         scheme, h, path, q, p, f = urlparse(maphref)
@@ -226,6 +267,8 @@ class GridProvider:
         """ Convert configured parameters to keyword args for __init__().
         """
         kwargs = {'mapfile': config_dict['mapfile']}
+        kwargs['auth_column'] = config_dict.get('auth_column', None)
+        kwargs['dbparams'] = config_dict.get('dbparams', None)
 
         for key in ('fields', 'layers', 'layer_index', 'scale', 'layer_id_key'):
             if key in config_dict:
@@ -233,7 +276,7 @@ class GridProvider:
         
         return kwargs
     
-    def renderArea(self, width, height, srs, xmin, ymin, xmax, ymax, zoom):
+    def renderArea(self, width, height, srs, xmin, ymin, xmax, ymax, zoom, auth):
         """
         """
         start_time = time()
@@ -246,6 +289,23 @@ class GridProvider:
                 if self.mapnik is None:
                     self.mapnik = get_mapnikMap(self.mapfile)
                     logging.debug('TileStache.Mapnik.GridProvider.renderArea() %.3f to load %s', time() - start_time, self.mapfile)
+
+                for la in self.mapnik.layers:
+                    query = """(SELECT * 
+                                FROM {}
+                                WHERE {} IN ({})
+                               ) AS {}""".format(self.table,
+                                            self.auth_column,
+                                            ', '.join(str(i) for i in auth),
+                                            self.table)
+                    la.datasource = mapnik.PostGIS(
+                           host=str(self.host),
+                           geometry_field=str(self.geometry_field),
+                           key_field=str(self.key_field),
+                           user=str(self.user),
+                           password=str(self.password),
+                           dbname=str(self.dbname),
+                           table=query)
 
                 self.mapnik.width = width
                 self.mapnik.height = height

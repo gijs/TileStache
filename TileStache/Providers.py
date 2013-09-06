@@ -112,6 +112,10 @@ def getProviderByName(name):
         from . import Mapnik
         return Mapnik.ImageProvider
 
+    elif name.lower() == 'mapnik auth':
+        from . import MapnikAuth
+        return MapnikAuth.ImageProvider
+
     elif name.lower() == 'proxy':
         return Proxy
 
@@ -122,6 +126,10 @@ def getProviderByName(name):
         from . import Vector
         return Vector.Provider
 
+    elif name.lower() == 'vector auth':
+        from .Vector import Auth
+        return Auth.Provider
+
     elif name.lower() == 'mbtiles':
         from . import MBTiles
         return MBTiles.Provider
@@ -129,6 +137,10 @@ def getProviderByName(name):
     elif name.lower() == 'mapnik grid':
         from . import Mapnik
         return Mapnik.GridProvider
+
+    elif name.lower() == 'mapnik grid auth':
+        from . import MapnikAuth
+        return MapnikAuth.GridProvider
 
     elif name.lower() == 'sandwich':
         from . import Sandwich

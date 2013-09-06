@@ -539,7 +539,7 @@ class Provider:
         See module documentation for explanation of constructor arguments.
     """
     
-    def __init__(self, layer, driver, parameters, clipped, verbose, projected, spacing, properties, precision, id_property):
+    def __init__(self, layer, driver, parameters, clipped, verbose, projected, spacing, properties, precision, id_property, auth_column=None):
         self.layer      = layer
         self.driver     = driver
         self.clipped    = clipped
@@ -550,6 +550,8 @@ class Provider:
         self.properties = properties
         self.precision  = precision
         self.id_property = id_property
+        if auth_column:
+            self.auth_column = auth_column
 
     @staticmethod
     def prepareKeywordArgs(config_dict):
@@ -564,6 +566,7 @@ class Provider:
         kwargs['projected'] = bool(config_dict.get('projected', False))
         kwargs['verbose'] = bool(config_dict.get('verbose', False))
         kwargs['precision'] = int(config_dict.get('precision', 6))
+        kwargs['auth_column'] = str(config_dict.get('auth_column', None))
         
         if 'spacing' in config_dict:
             kwargs['spacing'] = float(config_dict.get('spacing', 0.0))
@@ -577,9 +580,12 @@ class Provider:
         
         return kwargs
     
-    def renderTile(self, width, height, srs, coord):
+    def renderTile(self, width, height, srs, coord, auth):
         """ Render a single tile, return a VectorResponse instance.
         """
+        if auth:
+            self.parameters['query'] = self.parameters['query'].replace(
+                '!auth!', ', '.join(str(i) for i in auth))
         layer, ds = _open_layer(self.driver, self.parameters, self.layer.config.dirpath)
         features = _get_features(coord, self.properties, self.layer.projection, layer, self.clipped, self.projected, self.spacing, self.id_property)
         response = {'type': 'FeatureCollection', 'features': features}
