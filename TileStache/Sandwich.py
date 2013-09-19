@@ -159,16 +159,16 @@ class Provider:
         """
         return {'stack': config_dict['stack']}
     
-    def renderTile(self, width, height, srs, coord):
+    def renderTile(self, width, height, srs, coord, auth=None):
         
-        rendered = self.draw_stack(coord, dict())
+        rendered = self.draw_stack(coord, dict(), auth)
         
         if rendered.size() == (width, height):
             return rendered.image()
         else:
             return rendered.image().resize((width, height))
 
-    def draw_stack(self, coord, tiles):
+    def draw_stack(self, coord, tiles, auth=None):
         """ Render this image stack.
 
             Given a coordinate, return an output image with the results of all the
@@ -196,7 +196,7 @@ class Provider:
         
             if source_name and source_name not in tiles:
                 if source_name in self.config.layers:
-                    tiles[source_name] = layer_bitmap(self.config.layers[source_name], coord)
+                    tiles[source_name] = layer_bitmap(self.config.layers[source_name], coord, auth)
                 else:
                     tiles[source_name] = local_bitmap(source_name, self.config, coord, self.layer.dim)
         
@@ -269,14 +269,14 @@ def local_bitmap(source, config, coord, dim):
     
     return Blit.Bitmap(output)
 
-def layer_bitmap(layer, coord):
+def layer_bitmap(layer, coord, auth=None):
     """ Return Blit.Bitmap representation of tile from a given layer.
     
         Uses TileStache.getTile(), so caches are read and written as normal.
     """
     from . import getTile
 
-    mime, body = getTile(layer, coord, 'png')
+    mime, body = getTile(layer, coord, 'png', auth)
     image = Image.open(StringIO(body)).convert('RGBA')
 
     return Blit.Bitmap(image)
