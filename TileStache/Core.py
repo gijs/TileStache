@@ -535,7 +535,7 @@ class Layer:
                 body = buff.getvalue()
 
                 if self.write_cache:
-                    self.config.cache.save(body, self, other, format, auth)
+                    self.config.cache.save(body, self, other, auth, format)
                 
                 if other == coord:
                     # the one that actually gets returned
