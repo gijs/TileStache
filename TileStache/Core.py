@@ -535,13 +535,13 @@ class Layer:
                 body = buff.getvalue()
 
                 if self.write_cache:
-                    self.config.cache.save(body, self, other, format)
+                    self.config.cache.save(body, self, other, format, auth)
                 
                 if other == coord:
                     # the one that actually gets returned
                     tile = subtile
                 
-                _addRecentTile(self, other, format, body)
+                _addRecentTile(self, other, auth, format, body)
         
         return tile
     
