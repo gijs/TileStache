@@ -1,0 +1,7 @@
+recursive-include TileStache  *
+recursive-include man *
+recursive-include scripts *
+recursive-include tests *
+recursive-include  www *
+include *
+global-exclude *.pyc
