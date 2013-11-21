@@ -49,12 +49,16 @@ except ImportError:
     pass
 
 
-def tile_key(layer, coord, format, key_prefix):
+def tile_key(layer, coord, auth, format, key_prefix):
     """ Return a tile key string.
     """
     name = layer.name()
     tile = '%(zoom)d/%(column)d/%(row)d' % coord.__dict__
-    key = str('%(key_prefix)s/%(name)s/%(tile)s.%(format)s' % locals())
+    if auth:
+        ids = "/".join(str(id) for id in auth)
+        key = str('%(key_prefix)s/%(name)s/%(tile)s/%(ids)s.%(format)s' % locals())
+    else:
+        key = str('%(key_prefix)s/%(name)s/%(tile)s.%(format)s' % locals())
     return key
 
 
@@ -69,11 +73,11 @@ class Cache:
         self.key_prefix = key_prefix
 
 
-    def lock(self, layer, coord, format):
+    def lock(self, layer, coord, auth, format):
         """ Acquire a cache lock for this tile.
             Returns nothing, but blocks until the lock has been acquired.
         """
-        key = tile_key(layer, coord, format, self.key_prefix) + "-lock" 
+        key = tile_key(layer, coord, auth, format, self.key_prefix) + "-lock" 
         due = _time() + layer.stale_lock_timeout
 
         while _time() < due:
@@ -85,27 +89,27 @@ class Cache:
         self.conn.set(key, 'locked.')
         return
         
-    def unlock(self, layer, coord, format):
+    def unlock(self, layer, coord, auth, format):
         """ Release a cache lock for this tile.
         """
-        key = tile_key(layer, coord, format, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.key_prefix)
         self.conn.delete(key+'-lock')
         
-    def remove(self, layer, coord, format):
+    def remove(self, layer, coord, auth, format):
         """ Remove a cached tile.
         """
-        key = tile_key(layer, coord, format, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.key_prefix)
         self.conn.delete(key)
         
-    def read(self, layer, coord, format):
+    def read(self, layer, coord, auth, format):
         """ Read a cached tile.
         """
-        key = tile_key(layer, coord, format, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.key_prefix)
         value = self.conn.get(key)
         return value
         
-    def save(self, body, layer, coord, format):
+    def save(self, body, layer, coord, auth, format):
         """ Save a cached tile.
         """
-        key = tile_key(layer, coord, format, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.key_prefix)
         self.conn.set(key, body)

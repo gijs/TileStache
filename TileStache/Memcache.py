@@ -39,12 +39,16 @@ except ImportError:
     # at least we can build the documentation
     pass
 
-def tile_key(layer, coord, format, rev, key_prefix):
+def tile_key(layer, coord, auth, format, rev, key_prefix):
     """ Return a tile key string.
     """
     name = layer.name()
     tile = '%(zoom)d/%(column)d/%(row)d' % coord.__dict__
-    return str('%(key_prefix)s/%(rev)s/%(name)s/%(tile)s.%(format)s' % locals())
+    if auth:
+        ids = "/".join(str(id) for id in auth)
+        return str('%(key_prefix)s/%(rev)s/%(name)s/%(tile)s/%(ids)s.%(format)s' % locals())
+    else:
+        return str('%(key_prefix)s/%(rev)s/%(name)s/%(tile)s.%(format)s' % locals())
 
 class Cache:
     """
@@ -54,13 +58,13 @@ class Cache:
         self.revision = revision
         self.key_prefix = key_prefix
 
-    def lock(self, layer, coord, format):
+    def lock(self, layer, coord, auth, format):
         """ Acquire a cache lock for this tile.
         
             Returns nothing, but blocks until the lock has been acquired.
         """
         mem = Client(self.servers)
-        key = tile_key(layer, coord, format, self.revision, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.revision, self.key_prefix)
         due = _time() + layer.stale_lock_timeout
         
         try:
@@ -76,40 +80,40 @@ class Cache:
         finally:
             mem.disconnect_all()
         
-    def unlock(self, layer, coord, format):
+    def unlock(self, layer, coord, auth, format):
         """ Release a cache lock for this tile.
         """
         mem = Client(self.servers)
-        key = tile_key(layer, coord, format, self.revision, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.revision, self.key_prefix)
         
         mem.delete(key+'-lock')
         mem.disconnect_all()
         
-    def remove(self, layer, coord, format):
+    def remove(self, layer, coord, auth, format):
         """ Remove a cached tile.
         """
         mem = Client(self.servers)
-        key = tile_key(layer, coord, format, self.revision, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.revision, self.key_prefix)
         
         mem.delete(key)
         mem.disconnect_all()
         
-    def read(self, layer, coord, format):
+    def read(self, layer, coord, auth, format):
         """ Read a cached tile.
         """
         mem = Client(self.servers)
-        key = tile_key(layer, coord, format, self.revision, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.revision, self.key_prefix)
         
         value = mem.get(key)
         mem.disconnect_all()
         
         return value
         
-    def save(self, body, layer, coord, format):
+    def save(self, body, layer, coord, auth, format):
         """ Save a cached tile.
         """
         mem = Client(self.servers)
-        key = tile_key(layer, coord, format, self.revision, self.key_prefix)
+        key = tile_key(layer, coord, auth, format, self.revision, self.key_prefix)
         
         mem.set(key, body, layer.cache_lifespan or 0)
         mem.disconnect_all()
