@@ -402,25 +402,25 @@ class Multi:
     def __init__(self, tiers):
         self.tiers = tiers
 
-    def lock(self, layer, coord, format):
+    def lock(self, layer, coord, auth, format):
         """ Acquire a cache lock for this tile in the first tier.
         
             Returns nothing, but blocks until the lock has been acquired.
         """
-        return self.tiers[0].lock(layer, coord, format)
+        return self.tiers[0].lock(layer, coord, auth, format)
     
-    def unlock(self, layer, coord, format):
+    def unlock(self, layer, coord, auth, format):
         """ Release a cache lock for this tile in the first tier.
         """
-        return self.tiers[0].unlock(layer, coord, format)
+        return self.tiers[0].unlock(layer, coord, auth, format)
         
-    def remove(self, layer, coord, format):
+    def remove(self, layer, coord, auth, format):
         """ Remove a cached tile from every tier.
         """
         for (index, cache) in enumerate(self.tiers):
-            cache.remove(layer, coord, format)
+            cache.remove(layer, coord, auth, format)
         
-    def read(self, layer, coord, format):
+    def read(self, layer, coord, auth, format):
         """ Read a cached tile.
         
             Start at the first tier and work forwards until a cached tile
@@ -428,21 +428,21 @@ class Multi:
             access on future requests.
         """
         for (index, cache) in enumerate(self.tiers):
-            body = cache.read(layer, coord, format)
+            body = cache.read(layer, coord, auth, format)
             
             if body:
                 # save the body in earlier tiers for speedier access
                 for cache in self.tiers[:index]:
-                    cache.save(body, layer, coord, format)
+                    cache.save(body, layer, coord, auth, format)
                 
                 return body
         
         return None
     
-    def save(self, body, layer, coord, format):
+    def save(self, body, layer, coord, auth, format):
         """ Save a cached tile.
         
             Every tier gets a saved copy.
         """
         for (index, cache) in enumerate(self.tiers):
-            cache.save(body, layer, coord, format)
+            cache.save(body, layer, coord, auth, format)
