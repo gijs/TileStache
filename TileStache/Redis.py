@@ -55,7 +55,7 @@ def tile_key(layer, coord, auth, format, key_prefix):
     name = layer.name()
     tile = '%(zoom)d/%(column)d/%(row)d' % coord.__dict__
     if auth:
-        ids = "/".join(str(id) for id in auth)
+        ids = "/".join(str(id) for id in sorted(auth))
         key = str('%(key_prefix)s/%(name)s/%(tile)s/%(ids)s.%(format)s' % locals())
     else:
         key = str('%(key_prefix)s/%(name)s/%(tile)s.%(format)s' % locals())

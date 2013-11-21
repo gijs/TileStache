@@ -200,7 +200,7 @@ class Disk:
         e = format.lower()
         e += self._is_compressed(format) and '.gz' or ''
         if auth:
-            auth_part = os.sep.join([str(i) for i in auth])
+            auth_part = os.sep.join(sorted(str(i) for i in auth))
         else:
             auth_part = ''
         
