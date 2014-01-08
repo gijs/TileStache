@@ -17,11 +17,7 @@ import os
 import logging
 import json
 
-try:
-    import mapnik
-except ImportError:
-    # can still build documentation
-    pass
+import mapnik
 
 from TileStache.Core import KnownUnknown
 from TileStache.Geography import getProjectionByName
@@ -32,13 +28,7 @@ except ImportError:
     # On some systems, PIL.Image is known as Image.
     import Image
 
-if 'mapnik' in locals():
-    _version = hasattr(mapnik, 'mapnik_version') and mapnik.mapnik_version() or 701
-    
-    if _version >= 20000:
-        Box2d = mapnik.Box2d
-    else:
-        Box2d = mapnik.Envelope
+
 
 global_mapnik_lock = allocate_lock()
 

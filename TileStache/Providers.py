@@ -98,10 +98,10 @@ except ImportError:
 
 # Already deprecated; provided for temporary backward-compatibility with
 # old location of Mapnik provider. TODO: remove in next major version.
-try:
-    from .Mapnik import ImageProvider as Mapnik
-except ImportError:
-    pass
+# try:
+#     from .MapnikProviders import ImageProvider as MapnikProviders
+# except ImportError:
+#     pass
 
 def getProviderByName(name):
     """ Retrieve a provider object by name.
@@ -109,8 +109,8 @@ def getProviderByName(name):
         Raise an exception if the name doesn't work out.
     """
     if name.lower() == 'mapnik':
-        from . import Mapnik
-        return Mapnik.ImageProvider
+        from . import MapnikProviders
+        return MapnikProviders.ImageProvider
 
     elif name.lower() == 'mapnik auth':
         from . import MapnikAuth
@@ -135,8 +135,8 @@ def getProviderByName(name):
         return MBTiles.Provider
 
     elif name.lower() == 'mapnik grid':
-        from . import Mapnik
-        return Mapnik.GridProvider
+        from . import MapnikProviders
+        return MapnikProviders.GridProvider
 
     elif name.lower() == 'mapnik grid auth':
         from . import MapnikAuth
